@@ -12,10 +12,24 @@ from crew_config import generate_police_report
 
 app = FastAPI()
 
-# Ensure /tmp exists (though it usually does on Mac/Linux)
 UPLOAD_DIR = "/tmp/whistleblower_evidence"
+CHAT_LOG = os.path.join(UPLOAD_DIR, "chat_history.json")
+
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
+
+def load_chat():
+    if os.path.exists(CHAT_LOG):
+        with open(CHAT_LOG, "r") as f:
+            return json.load(f)
+    return [
+        {"role": "system", "content": "Secure connection established. End-to-end encryption active."},
+        {"role": "assistant", "content": "How can I help you today? You can share information or upload evidence securely."}
+    ]
+
+def save_chat(messages):
+    with open(CHAT_LOG, "w") as f:
+        json.dump(messages, f)
 
 def extract_text_from_pdf(file_path: str) -> str:
     """Extracts all text from a PDF file."""
@@ -98,6 +112,12 @@ async def upload_evidence(file: UploadFile = File(...), chat_text: str = None):
         # Generate police report using CrewAI
         crew_response = generate_police_report(analysis_result)
         
+        # Log to persistent chat
+        messages = load_chat()
+        messages.append({"role": "user", "content": f"Uploaded evidence: [{file.filename}]", "file_url": f"/evidence/{file.filename}", "chat_text": chat_text})
+        messages.append({"role": "assistant", "content": f"File [{file.filename}] ingested. Report generated.", "report": str(crew_response)})
+        save_chat(messages)
+        
         return {
             "filename": file.filename,
             "status": "success",
@@ -109,12 +129,19 @@ async def upload_evidence(file: UploadFile = File(...), chat_text: str = None):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing evidence: {str(e)}")
 
+@app.post("/chat")
+async def post_chat(message: dict):
+    messages = load_chat()
+    messages.append(message)
+    # Simulate AI response if it's from user
+    if message.get("role") == "user":
+        messages.append({"role": "assistant", "content": "Acknowledged. Updating session cache."})
+    save_chat(messages)
+    return {"status": "success"}
+
 @app.get("/chat-history")
 async def get_chat():
-    return [
-        {"role": "system", "content": "Secure connection established. End-to-end encryption active."},
-        {"role": "assistant", "content": "How can I help you today? You can share information or upload evidence securely."}
-    ]
+    return load_chat()
 
 @app.get("/admin-data")
 async def get_admin_data():

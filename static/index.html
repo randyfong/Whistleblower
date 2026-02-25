@@ -166,23 +166,32 @@
             try {
                 const res = await fetch('/chat-history');
                 const data = await res.json();
+                chatWindow.innerHTML = '';
                 data.forEach(msg => {
-                    addMessage(msg.role, msg.content, msg.role === 'system');
+                    const extra = msg.file_url ? { type: 'image', url: msg.file_url } : (msg.report ? { type: 'report', content: msg.report } : null);
+                    addMessage(msg.role, msg.content, msg.role === 'system', extra);
                 });
             } catch (e) {
                 console.error('Failed to fetch history', e);
             }
         }
 
-        sendBtn.onclick = () => {
+        sendBtn.onclick = async () => {
             const val = messageInput.value.trim();
             if (val) {
                 addMessage('user', val);
                 messageInput.value = '';
-                // Simulate AI response
-                setTimeout(() => {
-                    addMessage('assistant', 'Message received. Verifying integrity...');
-                }, 1000);
+                try {
+                    await fetch('/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ role: 'user', content: val })
+                    });
+                    // Refresh history to get AI response
+                    setTimeout(fetchHistory, 1500);
+                } catch (e) {
+                    console.error('Failed to send chat', e);
+                }
             }
         };
 
