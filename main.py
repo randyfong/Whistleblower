@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse
 from typing import List
 from crew_config import generate_police_report
 
-app = FastAPI()
+app = FastAPI(title="Paper Trail Zero")
 
 UPLOAD_DIR = "/tmp/whistleblower_evidence"
 CHAT_LOG = os.path.join(UPLOAD_DIR, "chat_history.json")
