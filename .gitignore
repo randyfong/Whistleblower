@@ -1,0 +1,8 @@
+.env
+.venv
+__pycache__
+*.pyc
+.DS_Store
+static/node_modules
+test_image.png
+/tmp/whistleblower_evidence
