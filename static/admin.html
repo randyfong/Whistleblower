@@ -27,6 +27,10 @@
         <div>
             <h1 class="text-2xl font-bold text-white uppercase tracking-widest">Evidence Vault</h1>
             <p class="text-xs text-gray-600 mt-1">RECIPIENT PORTAL // UNRESTRICTED ACCESS</p>
+            <button id="clear-vault-btn"
+                class="mt-4 px-3 py-1.5 border border-red-500/30 text-red-500 text-[10px] font-bold uppercase hover:bg-red-500 hover:text-white transition-all rounded">
+                Clear Vault
+            </button>
         </div>
         <div class="flex gap-8 text-right">
             <div>
@@ -122,6 +126,20 @@
             }
         }
         loadAdminData();
+
+        document.getElementById('clear-vault-btn').onclick = async () => {
+            if (confirm("CRITICAL: This will permanently delete ALL evidence and chat logs. Proceed?")) {
+                try {
+                    const res = await fetch('/admin-clear', { method: 'DELETE' });
+                    if (res.ok) {
+                        alert("Vault cleared successfully.");
+                        loadAdminData();
+                    }
+                } catch (e) {
+                    console.error('Clear failed', e);
+                }
+            }
+        };
     </script>
 </body>
 

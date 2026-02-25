@@ -171,6 +171,26 @@ async def get_admin_data():
             })
     return {"files": files}
 
+@app.delete("/admin-clear")
+async def clear_admin_data():
+    if os.path.exists(UPLOAD_DIR):
+        for filename in os.listdir(UPLOAD_DIR):
+            file_path = os.path.join(UPLOAD_DIR, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+            except Exception as e:
+                print(f"Failed to delete {file_path}. Reason: {e}")
+    
+    # Save an empty but valid chat history
+    save_chat([
+        {"role": "system", "content": "Secure connection established. End-to-end encryption active."},
+        {"role": "assistant", "content": "How can I help you today? You can share information or upload evidence securely."}
+    ])
+    return {"status": "success", "message": "All evidence and chat history cleared."}
+
 # Serve uploaded evidence as static files
 # Warning: In a production environment, this should be secured.
 app.mount("/evidence", StaticFiles(directory=UPLOAD_DIR), name="evidence")
