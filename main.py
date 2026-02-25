@@ -1,6 +1,7 @@
 import os
 import shutil
 import base64
+import json
 import httpx
 import fitz  # PyMuPDF
 from fastapi import FastAPI, UploadFile, File, HTTPException
@@ -64,16 +65,25 @@ async def analyze_image_with_venice(file_path: str) -> str:
         return response.json()['choices'][0]['message']['content']
 
 @app.post("/upload")
-async def upload_evidence(file: UploadFile = File(...)):
+async def upload_evidence(file: UploadFile = File(...), chat_text: str = None):
     # Validate file type
     if file.content_type not in ["image/jpeg", "image/png", "application/pdf"]:
         raise HTTPException(status_code=400, detail="Only JPEG, PNG, or PDF files are allowed.")
     
     file_path = os.path.join(UPLOAD_DIR, file.filename)
+    metadata_path = file_path + ".meta.json"
     
     try:
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
+        
+        # Save metadata
+        metadata = {
+            "chat_text": chat_text or "No context provided.",
+            "timestamp": os.path.getctime(file_path)
+        }
+        with open(metadata_path, "w") as f:
+            json.dump(metadata, f)
         
         analysis_result = ""
         # Process based on file type
@@ -111,12 +121,27 @@ async def get_admin_data():
     files = []
     if os.path.exists(UPLOAD_DIR):
         for filename in os.listdir(UPLOAD_DIR):
-            if filename != ".DS_Store":
-                files.append({
-                    "filename": filename,
-                    "url": f"/evidence/{filename}",
-                    "type": "image" if filename.lower().endswith((".png", ".jpg", ".jpeg", ".gif")) else "document"
-                })
+            if filename.endswith(".meta.json") or filename == ".DS_Store":
+                continue
+                
+            file_path = os.path.join(UPLOAD_DIR, filename)
+            metadata_path = file_path + ".meta.json"
+            chat_text = "No context provided."
+            
+            if os.path.exists(metadata_path):
+                try:
+                    with open(metadata_path, "r") as f:
+                        meta = json.load(f)
+                        chat_text = meta.get("chat_text", chat_text)
+                except:
+                    pass
+
+            files.append({
+                "filename": filename,
+                "url": f"/evidence/{filename}",
+                "chat_text": chat_text,
+                "type": "image" if filename.lower().endswith((".png", ".jpg", ".jpeg", ".gif")) else "document"
+            })
     return {"files": files}
 
 # Serve uploaded evidence as static files
