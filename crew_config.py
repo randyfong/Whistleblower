@@ -12,7 +12,7 @@ venice_base_url = "https://api.venice.ai/api/v1"
 
 # Instance 1: Llama 3.3 70b
 llama_llm = LLM(
-    model="venice/llama-3.3-70b",
+    model="openai/llama-3.3-70b",
     base_url=venice_base_url,
     api_key=api_key,
     temperature=0.7
@@ -20,7 +20,7 @@ llama_llm = LLM(
 
 # Instance 2: Qwen 3 VL
 qwen_llm = LLM(
-    model="venice/qwen3-vl-235b-a22b",
+    model="openai/qwen3-vl-235b-a22b",
     base_url=venice_base_url,
     api_key=api_key,
     temperature=0.7
@@ -45,6 +45,15 @@ analyst = Agent(
     verbose=True
 )
 
+summary_agent = Agent(
+    role='Report Specialist',
+    goal='Create a professional and concise police report based on provided evidence and whistleblower intent.',
+    backstory='You are a veteran police officer with expertise in drafting formal reports that are clear, factual, and actionable for investigators.',
+    allow_delegation=False,
+    llm=llama_llm,
+    verbose=True
+)
+
 # Define Tasks
 task1 = Task(
     description='Analyze the risk of local file storage for whistleblower evidence.',
@@ -65,6 +74,26 @@ crew = Crew(
     process=Process.sequential,
     verbose=True
 )
+
+def generate_police_report(evidence_analysis: str):
+    """
+    Triggers CrewAI to generate a police report based on the provided evidence analysis.
+    """
+    report_task = Task(
+        description=f'Based on the following extracted evidence: "{evidence_analysis}", create a formal police report. '
+                    f'The report should include: Date/Time (placeholder), Evidence Summary, and Potential Category of Crime.',
+        expected_output='A structured, professional police report in markdown format.',
+        agent=summary_agent
+    )
+    
+    report_crew = Crew(
+        agents=[summary_agent],
+        tasks=[report_task],
+        process=Process.sequential,
+        verbose=True
+    )
+    
+    return report_crew.kickoff()
 
 if __name__ == "__main__":
     print("### Starting CrewAI Verification with Venice AI ###")
