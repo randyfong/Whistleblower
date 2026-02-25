@@ -102,7 +102,7 @@
         const fileUpload = document.getElementById('file-upload');
         const uploadStatus = document.getElementById('upload-status');
 
-        function addMessage(role, content, isSystem = false) {
+        function addMessage(role, content, isSystem = false, extra = null) {
             const div = document.createElement('div');
             div.className = `max-w-2xl ${role === 'user' ? 'ml-auto text-right' : 'mr-auto text-left'}`;
             
@@ -111,6 +111,25 @@
             if (isSystem) inner.className += ' italic text-emerald-400 border-none bg-transparent py-2 px-0 shadow-none';
             
             inner.innerHTML = content.replace(/\n/g, '<br>');
+
+            if (extra && extra.type === 'image') {
+                const img = document.createElement('img');
+                img.src = extra.url;
+                img.className = 'mt-3 rounded-md border border-gray-700 max-w-full opacity-80 hover:opacity-100 transition-opacity cursor-pointer';
+                img.onclick = () => window.open(extra.url, '_blank');
+                inner.appendChild(img);
+            }
+
+            if (extra && extra.type === 'report') {
+                const reportBtn = document.createElement('button');
+                reportBtn.className = 'mt-3 block w-full text-left p-3 bg-black/40 border border-emerald-500/30 rounded text-[10px] text-emerald-400 hover:bg-emerald-500/10 transition-colors';
+                reportBtn.innerHTML = `<span class="font-bold underline uppercase">View Generated Police Report</span>`;
+                reportBtn.onclick = () => {
+                    const win = window.open("", "_blank");
+                    win.document.write(`<pre style="background:#111;color:#eee;padding:20px;font-family:monospace;white-space:pre-wrap;">${extra.content}</pre>`);
+                };
+                inner.appendChild(reportBtn);
+            }
             
             const meta = document.createElement('div');
             meta.className = 'text-[10px] text-gray-500 mb-1 uppercase font-bold tracking-tighter';
@@ -166,8 +185,14 @@
                     
                     if (res.ok) {
                         uploadStatus.textContent = `Upload verified: ${data.filename}`;
-                        addMessage('user', `Uploaded evidence: [${file.name}]`);
-                        addMessage('assistant', `File [${file.name}] successfully ingested into secure storage. Integrity Hash: ${Math.random().toString(36).substring(2, 10).toUpperCase()}`);
+                        
+                        const isImage = file.type.startsWith('image/');
+                        const extra = isImage ? { type: 'image', url: `/evidence/${data.filename}` } : null;
+                        
+                        addMessage('user', `Uploaded evidence: [${file.name}]`, false, extra);
+                        
+                        const assistantMsg = `File [${file.name}] successfully ingested into secure storage.\n\n**Visual Analysis Results:**\n${data.analysis}`;
+                        addMessage('assistant', assistantMsg, false, data.police_report ? { type: 'report', content: data.police_report } : null);
                     } else {
                         uploadStatus.textContent = `Security failure: ${data.detail}`;
                     }

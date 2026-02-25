@@ -106,8 +106,24 @@ async def get_chat():
         {"role": "assistant", "content": "How can I help you today? You can share information or upload evidence securely."}
     ]
 
+@app.get("/admin-data")
+async def get_admin_data():
+    files = []
+    if os.path.exists(UPLOAD_DIR):
+        for filename in os.listdir(UPLOAD_DIR):
+            if filename != ".DS_Store":
+                files.append({
+                    "filename": filename,
+                    "url": f"/evidence/{filename}",
+                    "type": "image" if filename.lower().endswith((".png", ".jpg", ".jpeg", ".gif")) else "document"
+                })
+    return {"files": files}
+
+# Serve uploaded evidence as static files
+# Warning: In a production environment, this should be secured.
+app.mount("/evidence", StaticFiles(directory=UPLOAD_DIR), name="evidence")
+
 # Serve static files
-# We'll create the static directory next
 if os.path.exists("static"):
     app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
