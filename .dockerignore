@@ -1,0 +1,11 @@
+.env
+.env.*
+.venv
+__pycache__
+*.pyc
+.git
+.gitignore
+.DS_Store
+test_evidence.pdf
+upload_result.json
+test_image.png
