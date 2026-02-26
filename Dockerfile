@@ -1,11 +1,17 @@
-FROM --platform=linux/amd64 python:3.12-slim
+ARG TARGETPLATFORM=linux/amd64
+FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install system dependencies for PyMuPDF
+# Install system dependencies:
+#   libmupdf-dev  - PyMuPDF
+#   build-essential, python3-dev - compile chroma-hnswlib (CrewAI -> chromadb)
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libmupdf-dev && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y --no-install-recommends \
+        libmupdf-dev \
+        build-essential \
+        python3-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
