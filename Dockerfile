@@ -1,4 +1,5 @@
-FROM --platform=linux/amd64 python:3.12-slim
+ARG TARGETPLATFORM=linux/amd64
+FROM python:3.12-slim
 
 WORKDIR /app
 
