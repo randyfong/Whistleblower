@@ -88,43 +88,86 @@ docker push ghcr.io/<your-github-username>/whistleblower:v0.1.0
 
 ## Deploy to Akash Network
 
-This repository includes an Akash SDL file (`deploy.yaml`) for deploying to the decentralized cloud.
+This repository includes an Akash SDL file (`deploy.yaml`) for deploying to the [Akash Network](https://akash.network) — a decentralized cloud. No CLI or terminal needed. Everything below is done through a web browser.
 
-### Prerequisites
+### What You'll Need
 
-- [Akash CLI](https://akash.network/docs/) installed
-- An Akash wallet with AKT tokens
-- The Docker image pushed to GHCR (see above)
+1. **Your Docker image pushed to a registry** — Follow the [Docker](#docker) section above first. You need the image name (e.g. `yourname/whistleblower:v0.1.0`)
+2. **Your Venice AI API key** — Get one at [https://venice.ai](https://venice.ai)
 
-### Steps
+That's it. Akash Console offers a **free trial with a managed wallet** — no crypto, no browser extensions, no tokens to buy.
 
-1. **Edit `deploy.yaml`** — update the `image` to your pushed image and set your `VENICE_API_KEY`:
+### Step-by-Step Deployment
 
-   ```yaml
-   env:
-     - "VENICE_API_KEY=your_actual_key"
-   ```
+#### 1. Sign Up for Akash Console
 
-2. **Create a deployment**:
+- Go to **[https://console.akash.network](https://console.akash.network)**
+- Click **"Sign In"** in the top right
+- Sign in with your **GitHub** or **Google** account
+- You'll automatically get a **managed wallet** with free trial credits — no setup needed
 
-   ```bash
-   akash tx deployment create deploy.yaml --from your-wallet --chain-id akashnet-2
-   ```
+#### 2. Start a New Deployment
 
-3. **Wait for bids**, then accept one:
+- Click the **"Deploy"** button
+- Select **"Upload SDL"** (you will paste your own configuration)
 
-   ```bash
-   akash query market bid list --owner <your-address> --dseq <deployment-sequence>
-   akash tx market lease create --from your-wallet --dseq <dseq> --gseq 1 --oseq 1 --provider <provider-address>
-   ```
+#### 3. Edit the SDL Before Pasting
 
-4. **Send the manifest**:
+Open the `deploy.yaml` file from this repo and make two changes before pasting it:
 
-   ```bash
-   akash provider send-manifest deploy.yaml --from your-wallet --provider <provider-address> --dseq <dseq>
-   ```
+**a) Set your Docker image** — Replace the `image` line with your actual image:
 
-Alternatively, deploy via the [Akash Console](https://console.akash.network) by uploading `deploy.yaml`.
+```yaml
+image: <your-dockerhub-username>/whistleblower:v0.1.0
+```
+
+**b) Set your Venice API key** — Fill in the value:
+
+```yaml
+env:
+  - "VENICE_API_KEY=your_actual_api_key_here"
+```
+
+Then paste the full edited SDL into the Console editor.
+
+#### 4. Create the Deployment
+
+- Click **"Create Deployment"**
+- If prompted, approve the transaction (this reserves a small deposit for your deployment)
+
+#### 5. Pick a Provider
+
+- After a few seconds, you'll see a list of **bids** from providers (these are servers that want to host your app)
+- Each bid shows a **price per month** — pick one that looks good (cheaper is fine, they all work)
+- Click **"Accept Bid"**
+
+#### 6. Wait for It to Start
+
+- The Console will show your deployment status
+- Once it says **"Active"**, your app is running
+- You'll see a **URL** assigned to your deployment (something like `*.provider.akash.network`) — click it to open your app
+
+#### 7. Check Logs (If Something Goes Wrong)
+
+- On your deployment page, click the **"Logs"** tab
+- This shows what the container is printing — useful for debugging
+
+### Updating Your Deployment
+
+If you push a new Docker image version (e.g. `v0.1.2`):
+
+1. Go to your deployment in the Console
+2. Click **"Update"**
+3. Change the `image` tag in the SDL to the new version
+4. Click **"Update Deployment"**
+
+### Closing Your Deployment
+
+When you're done and want to stop hosting:
+
+1. Go to your deployment in the Console
+2. Click **"Close"**
+3. Your remaining deposit will be refunded
 
 ## Environment Variables
 
