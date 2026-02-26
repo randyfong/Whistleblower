@@ -1,0 +1,40 @@
+---
+version: "2.0"
+
+services:
+  web:
+    # Replace with your own image (e.g. docker.io/youruser/whistleblower:v0.1.0)
+    image: <your-registry>/whistleblower:v0.1.0
+    env:
+      - "VENICE_API_KEY="
+    expose:
+      - port: 8000
+        as: 80
+        to:
+          - global: true
+        http_options:
+          max_body_size: 10485760
+          read_timeout: 60000
+
+profiles:
+  compute:
+    web:
+      resources:
+        cpu:
+          units: 1
+        memory:
+          size: 1Gi
+        storage:
+          - size: 1Gi
+  placement:
+    dcloud:
+      pricing:
+        web:
+          denom: uakt
+          amount: 1000
+
+deployment:
+  web:
+    dcloud:
+      profile: web
+      count: 1
